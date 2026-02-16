@@ -1,0 +1,6 @@
+streamlit
+langgraph
+langchain-ollama
+langfuse
+langchain-community
+langchain

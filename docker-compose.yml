@@ -1,0 +1,48 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  # 2. The Observability UI
+  langfuse:
+    image: langfuse/langfuse:latest
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/langfuse
+      - NEXTAUTH_SECRET=mysecret
+      - SALT=mysalt
+      - NEXTAUTH_URL=https://cloud.langfuse.com
+
+
+  # 3. Your Assistant App
+  assistant-app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - ollama
+      - langfuse
+    ports:
+      - "8501:8501"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - LANGFUSE_PUBLIC_KEY=pk-lf-3e666f6f-badd-48c4-a6df-f0c6e9f86a93
+      - LANGFUSE_SECRET_KEY=sk-lf-846ca765-d54f-4bc9-ad35-dcd34db76dbb
+      - LANGFUSE_HOST=https://cloud.langfuse.com
+
+  db:
+    image: postgres:16-alpine 
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=langfuse
+
+volumes:
+  ollama_data:
